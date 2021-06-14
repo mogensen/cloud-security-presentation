@@ -1,0 +1,16 @@
+version: '3'
+services:
+
+  nginx:
+    image: owasp/modsecurity-crs
+    environment:
+      - PROXY=1
+      - PROXYLOCATION=http://app:8000/
+      - SERVERNAME=nginx.localtest.me
+    ports:
+      - 80:80
+
+  app:
+    image: appsecco/dsvw
+    ports:
+      - 8000:8000

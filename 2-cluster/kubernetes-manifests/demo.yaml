@@ -1,0 +1,127 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  creationTimestamp: null
+  name: demo
+spec: {}
+status: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: goto-demo
+  namespace: demo
+  labels:
+    app.kubernetes.io/name: goto-demo
+    helm.sh/chart: goto-demo-0.1.0
+    app.kubernetes.io/instance: goto-demo
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: goto-demo
+  namespace: demo
+  labels:
+    app.kubernetes.io/name: goto-demo
+    helm.sh/chart: goto-demo-0.1.0
+    app.kubernetes.io/instance: goto-demo
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: goto-demo
+    app.kubernetes.io/instance: goto-demo
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: goto-demo
+  namespace: demo
+  labels:
+    app.kubernetes.io/name: goto-demo
+    helm.sh/chart: goto-demo-0.1.0
+    app.kubernetes.io/instance: goto-demo
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: goto-demo
+      app.kubernetes.io/instance: goto-demo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: goto-demo
+        app.kubernetes.io/instance: goto-demo
+    spec:
+      serviceAccountName: goto-demo
+      securityContext:
+        {}
+      containers:
+        - name: goto-demo
+          securityContext:
+            {}
+          image: "appsecco/dsvw"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "goto-demo-test-connection"
+  namespace: demo
+  labels:
+    app.kubernetes.io/name: goto-demo
+    helm.sh/chart: goto-demo-0.1.0
+    app.kubernetes.io/instance: goto-demo
+    app.kubernetes.io/version: "1.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    "helm.sh/hook": test-success
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args:  ['goto-demo:80']
+  restartPolicy: Never
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: goto-demo
+  namespace: demo
+spec:
+  rules:
+    - host: "goto-demo.localtest.me"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: goto-demo
+                port:
+                  number: 80

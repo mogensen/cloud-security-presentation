@@ -1,0 +1,37 @@
+version: '3'
+
+services:
+
+  sidekick-ui:
+    image: falcosecurity/falcosidekick-ui
+    ports:
+      - 2802:2802
+
+  sidekick:
+    image: falcosecurity/falcosidekick
+    environment:
+      WEBUI_URL: http://sidekick-ui:2802
+
+  falco:
+    image: falcosecurity/falco:0.28.1
+    privileged: true
+    environment:
+      - FALCO_BPF_PROBE=
+    command:
+      - /usr/bin/falco
+      - -o
+      - json_output=true
+      - -o
+      - json_include_output_property=true
+      - -o
+      - http_output.enabled=true
+      - -o
+      - http_output.url=http://sidekick:2801/
+    volumes:
+    - /boot:/host/boot:ro
+    - /lib/modules:/host/lib/modules:ro
+    - /usr:/host/usr:ro
+    - /etc:/host/etc:ro
+    - /var/run/docker.sock:/host/var/run/docker.sock
+    - /dev:/host/dev
+    - /proc:/host/proc:ro
